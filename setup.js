@@ -26,18 +26,22 @@ async function generateTarget() {
     AudioManager.play('chip');
   }, 100);
 
-  // Intelligent word generation ensuring it can be played, constrained to max length 30
+  // Intelligent word generation ensuring it can be played, constrained to level length bounds
+  const levelInfo = sharedState.getLevel();
+  
   while (!found && attempts < 10) {
     if (Math.random() < 0.8) {
       // 80% chance to guarantee picking a length dynamically supported by Fallback
-      const fallbackWords = Object.keys(DictionaryLogic.fallback).filter(w => w.length <= 30);
+      await DictionaryLogic.initFallback();
+      let fallbackWords = Object.keys(DictionaryLogic.fallback).filter(w => w.length >= levelInfo.minLen && w.length <= levelInfo.maxLen);
+      if (fallbackWords.length === 0) fallbackWords = Object.keys(DictionaryLogic.fallback);
       const randomWord = fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
       state.letter = randomWord[0].toUpperCase();
       state.length = randomWord.length;
     } else {
-      // 20% random length
+      // 20% random length within level limits
       state.letter = alphabet[Math.floor(Math.random() * alphabet.length)];
-      state.length = Math.floor(Math.random() * (30 - 4 + 1)) + 4;
+      state.length = Math.floor(Math.random() * (levelInfo.maxLen - levelInfo.minLen + 1)) + levelInfo.minLen;
     }
     
     state.wordsPool = await DictionaryLogic.fetchWords(state.letter, state.length);

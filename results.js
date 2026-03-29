@@ -51,6 +51,17 @@ state.selectedWords.forEach(word => {
 
 // Update History locally
 if (!sessionStorage.getItem('osmosis_saved_result')) {
+  const previousLevel = sharedState.getLevel().name;
+  const currentTotal = parseInt(localStorage.getItem('osmosis_total_score')) || 0;
+  localStorage.setItem('osmosis_total_score', currentTotal + targetScore);
+  const newLevel = sharedState.getLevel().name;
+  
+  if (newLevel !== previousLevel) {
+    setTimeout(() => {
+      showModal('Rank Promoted!', `You have transcended to the [${newLevel}] tier! Prepare for vastly expanded lexicon constraints.`);
+    }, 2500);
+  }
+
   const history = JSON.parse(localStorage.getItem('osmosis_history')) || [];
   history.push({
     date: new Date().toLocaleDateString(),

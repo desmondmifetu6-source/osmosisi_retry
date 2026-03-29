@@ -7,6 +7,13 @@ const sharedState = {
   },
   save: function(state) {
     sessionStorage.setItem('gameState', JSON.stringify(state));
+  },
+  getLevel: function() {
+    const score = parseInt(localStorage.getItem('osmosis_total_score')) || 0;
+    if (score >= 3001) return { name: 'Titan', minLen: 12, maxLen: 30, next: Infinity };
+    if (score >= 1501) return { name: 'Oak', minLen: 9, maxLen: 11, next: 3001 };
+    if (score >= 501) return { name: 'Sprout', minLen: 6, maxLen: 8, next: 1501 };
+    return { name: 'Seed', minLen: 4, maxLen: 5, next: 501 };
   }
 };
 
@@ -62,45 +69,20 @@ document.addEventListener('click', (e) => {
 });
 
 const DictionaryLogic = {
-  fallback: {
-    "abyssal": "Relating to or denoting the depths or bed of the ocean, especially between about 10,000 and 20,000 feet down.",
-    "anatomy": "The branch of science concerned with the bodily structure of humans, animals, and other living organisms.",
-    "benthic": "Relating to, or occurring at the bottom of a body of water.",
-    "catalyst": "A substance that increases the rate of a chemical reaction without itself undergoing any permanent chemical change.",
-    "dendrite": "A short branched extension of a nerve cell, along which impulses received from other cells at synapses are transmitted.",
-    "electron": "A stable subatomic particle with a charge of negative electricity, found in all atoms.",
-    "friction": "The resistance that one surface or object encounters when moving over another.",
-    "genetics": "The study of heredity and the variation of inherited characteristics.",
-    "herbivore": "An animal that feeds on plants.",
-    "isotope": "Each of two or more forms of the same element that contain equal numbers of protons but different numbers of neutrons.",
-    "kinetics": "The branch of chemistry or biochemistry concerned with measuring and studying the rates of reactions.",
-    "lithosphere": "The rigid outer part of the earth, consisting of the crust and upper mantle.",
-    "molecule": "A group of atoms bonded together, representing the smallest fundamental unit of a chemical compound.",
-    "nucleus": "The positively charged central core of an atom, consisting of protons and neutrons and containing nearly all its mass.",
-    "osmosis": "A process by which molecules of a solvent tend to pass through a semipermeable membrane from a less concentrated solution into a more concentrated one.",
-    "pathogen": "A bacterium, virus, or other microorganism that can cause disease.",
-    "quantum": "A discrete quantity of energy proportional in magnitude to the frequency of the radiation it represents.",
-    "radiation": "The emission of energy as electromagnetic waves or as moving subatomic particles, especially high-energy particles which cause ionization.",
-    "symbiosis": "Interaction between two different organisms living in close physical association, typically to the advantage of both.",
-    "taxonomy": "The branch of science concerned with classification, especially of organisms; systematics.",
-    "universe": "All existing matter and space considered as a whole; the cosmos.",
-    "vacuole": "A space or vesicle within the cytoplasm of a cell, enclosed by a membrane and typically containing fluid.",
-    "velocity": "The speed of something in a given direction.",
-    "wattage": "A measure of electrical power expressed in watts.",
-    "chromosome": "A threadlike structure of nucleic acids and protein found in the nucleus of most living cells, carrying genetic information.",
-    "mitochondria": "An organelle found in large numbers in most cells, in which the biochemical processes of respiration and energy production occur.",
-    "photosynthesis": "The process by which green plants and some other organisms use sunlight to synthesize nutrients from carbon dioxide and water.",
-    "thermodynamics": "The branch of physical science that deals with the relations between heat and other forms of energy.",
-    "pneumonoultramicroscopicsilicovolcanoconiosis": "An invented word for a lung disease caused by inhaling very fine ash and sand dust; the longest English word.",
-    "deoxyribonucleic": "A nucleic acid that is the main constituent of the chromosomes of all organisms (part of DNA).",
-    "electromagnetism": "The interaction of electric currents or fields and magnetic fields.",
-    "paleontology": "The branch of science concerned with fossil animals and plants.",
-    "bioluminescence": "The biochemical emission of light by living organisms such as fireflies and deep-sea fishes.",
-    "crystallography": "The branch of science concerned with the structure and properties of crystals.",
-    "spectroscopy": "The branch of science concerned with the investigation and measurement of spectra produced when matter interacts with or emits electromagnetic radiation.",
-    "neurotransmitter": "A chemical substance that is released at the end of a nerve fiber by the arrival of a nerve impulse, causing the transfer of the impulse to another nerve fiber."
+  fallback: {},
+  _loaded: false,
+  initFallback: async function() {
+    if (this._loaded) return;
+    try {
+      const res = await fetch('dictionary.json');
+      this.fallback = await res.json();
+      this._loaded = true;
+    } catch {
+      this.fallback = { "abyssal": "Ocean depths", "osmosis": "diffusion", "biology": "study of life" }; // simple ultimate failsafe
+    }
   },
   fetchWords: async function(letter, length) {
+    await this.initFallback();
     try {
       const pattern = letter.toLowerCase() + "?".repeat(length - 1);
       const res = await fetch(`https://api.datamuse.com/words?sp=${pattern}&topics=science&max=100`);
@@ -117,6 +99,7 @@ const DictionaryLogic = {
     }
   },
   fetchMeaning: async function(word) {
+    await this.initFallback();
     try {
       if(this.fallback[word.toLowerCase()]) return this.fallback[word.toLowerCase()];
       const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
