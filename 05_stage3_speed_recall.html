@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Osmosis - Flash Recall</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="core_styles.css">
+  <style>
+    .stage4f-card {
+      padding: 2.5rem 2rem;
+      max-width: 760px;
+      margin: auto;
+    }
+
+    .s4f-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 2px dashed var(--text-secondary);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .s4f-header h2 {
+      margin: 0;
+    }
+
+    .flash-zone {
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed var(--accent-primary);
+      border-radius: 10px;
+      margin: 1rem 0 1.25rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .flash-word {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    .flash-word.hidden {
+      visibility: hidden;
+    }
+
+    .hint {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      min-height: 24px;
+    }
+
+    .feedback {
+      text-align: center;
+      font-weight: 700;
+      min-height: 28px;
+      margin-bottom: 1rem;
+    }
+
+    .feedback.success {
+      color: #2e7d32;
+    }
+
+    .feedback.error {
+      color: #c62828;
+    }
+
+    .word-input {
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .word-input.correct {
+      border-color: #2e7d32;
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .word-input.wrong {
+      border-color: #c62828;
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    /* Missed Words Styling */
+    .missed-words-card {
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+    }
+
+    .missed-title {
+      font-size: 2.2rem;
+      color: #111111;
+      font-weight: 700;
+      text-align: center;
+      margin: 0;
+    }
+
+    .missed-subtitle {
+      font-size: 1.1rem;
+      color: #555555;
+      text-align: center;
+      margin-top: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .missed-word-tile {
+      padding: 0.6rem 1.2rem;
+      background: #ffffff;
+      color: #111111;
+      border: 1px solid #d4d4d4;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 1.2rem;
+      transition: background 0.2s ease;
+      animation: fadeInMissed 0.5s ease backwards;
+      cursor: default;
+    }
+
+    .missed-word-tile:hover {
+      background: #f5f5f5;
+    }
+
+    @keyframes fadeInMissed {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="scoreboard" id="scoreboard">Score: <span id="current-score">0</span></div>
+  <div class="app-container">
+    <div id="intro-container" class="card stage4f-card" style="text-align:center;">
+      <h1 style="font-size:2rem; margin-bottom:1rem;">Flash Recall</h1>
+      <p style="font-size:1.05rem; color:var(--text-secondary); margin-bottom:1.5rem; line-height:1.55;">
+        A word appears for <strong>2 seconds</strong>, then disappears. Type exactly what you saw.
+      </p>
+      <button id="start-btn" class="classic-btn" style="max-width:300px;">Start</button>
+    </div>
+
+    <div id="quiz-container" class="card stage4f-card" style="display:none;">
+      <div class="s4f-header">
+        <h2>Flash Recall</h2>
+        <div id="quiz-progress" style="font-size:1.2rem; font-weight:bold;">1 / 10</div>
+      </div>
+
+      <div class="flash-zone">
+        <div id="flash-word" class="flash-word">READY</div>
+      </div>
+      <p id="flash-hint" class="hint">Watch closely.</p>
+
+      <input type="text" id="typed-word-input" class="word-input" autocomplete="off" spellcheck="false"
+        placeholder="Type the word..." disabled>
+      <div id="flash-feedback" class="feedback"></div>
+
+      <button id="submit-btn" class="classic-btn" style="display:none;">Submit</button>
+      <button id="next-btn" class="classic-btn secondary" style="display:none;">Next</button>
+    </div>
+    <div id="transition-container" class="card stage4f-card" style="display: none; text-align: center;">
+      <h2 class="welcome-lap2" style="font-size: 2.2rem; color: #111111; margin-bottom: 1rem; font-weight:700;">Final
+        Recall</h2>
+      <p style="font-size:1.15rem; margin-bottom:2rem; color:#555555;">You completed the flashcards. Now, under immense
+        pressure, type as many
+        of your original words as you can remember without any visual hints.</p>
+      <button id="start-lap2-btn" class="classic-btn"
+        style="background:#111111; color:#fff; border:none; padding:0.8rem 1.5rem; border-radius:4px; font-weight:500;">Begin
+        Final Recall</button>
+    </div>
+
+    <!-- Lap 2 Container -->
+    <div id="lap2-container" class="card stage4f-card"
+      style="display: none; background: #ffffff; border: 1px solid #e5e5e5; border-radius:8px; box-shadow:none;">
+      <div class="s4f-header">
+        <h2 style="color: #111111; font-weight:700; font-size:1.8rem;">Level 2: Total Recall</h2>
+        <div id="lap2-timer" class="alarming-timer"
+          style="color: #111111; background: #fafafa; border: 1px solid #d4d4d4; padding:0.4rem 0.8rem; border-radius:4px;">
+          00:30</div>
+      </div>
+      <p style="font-weight:500; margin-bottom:1rem; text-align: center; color:#555;">Recall all words</p>
+      <div class="test-area" style="text-align: center; margin-bottom:1rem;">
+        <input type="text" id="lap2-input" class="word-input" autocomplete="off"
+          style="border: 1px solid #d4d4d4; border-radius:4px; background:#fff; color:#111;">
+        <div id="lap2-feedback" class="feedback" style="font-size:1rem; margin-top:0.5rem; height:1.5rem;"></div>
+      </div>
+      <div id="lap2-words-list"
+        style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; min-height:100px; padding:1rem; background:#fafafa; border:1px solid #e5e5e5; border-radius:4px;">
+      </div>
+    </div>
+
+    <!-- Missed Words Container -->
+    <div id="missed-words-container" class="card stage4f-card missed-words-card"
+      style="display: none; box-shadow:none;">
+      <div style="text-align: center; margin-bottom: 1rem;">
+        <h2 class="missed-title">Unrecalled Words</h2>
+        <p class="missed-subtitle">Take a moment to review the words you couldn't recall.</p>
+      </div>
+      <div id="missed-words-list"
+        style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; min-height:120px; padding:1.5rem; background: #fafafa; border-radius:4px; margin-bottom: 2rem; border: 1px solid #e5e5e5;">
+      </div>
+      <div style="text-align: center;">
+        <button id="finish-stage-missed-btn" class="classic-btn primary"
+          style="background: #111111; color: #ffffff; font-size: 1.1rem; padding: 0.8rem 2rem; font-weight: 500; border: none; border-radius:4px;">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="core_dictionary.js"></script>
+  <script src="core_shared_state.js"></script>
+  <script src="05_stage3_speed_recall.js"></script>
+</body>
+
+</html>

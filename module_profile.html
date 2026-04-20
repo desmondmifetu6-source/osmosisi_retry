@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Osmosis - Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="core_styles.css">
+  <style>
+    .history-card { text-align: left; }
+    .history-item { padding: 1rem; border-bottom: 1px dashed var(--text-secondary); margin-bottom: 1rem; }
+    .history-item:last-child { border-bottom: none; }
+    .history-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-family: var(--font-serif); font-weight: bold; }
+    .history-stats { color: var(--accent-primary); text-shadow: 1px 1px 0px rgba(0,0,0,0.5); }
+    .history-words { font-size: 0.9rem; color: var(--text-secondary); font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="card history-card">
+      <h2 style="text-align:center;">Your Record</h2>
+      <div id="history-list" style="margin-bottom:2rem;">
+        <!-- History populated here -->
+      </div>
+      <button id="go-home-btn" class="classic-btn secondary">Return to Menu</button>
+    </div>
+  </div>
+  <script src="core_dictionary.js"></script>
+  <script src="core_shared_state.js"></script>
+  <script src="module_profile.js"></script>
+</body>
+</html>

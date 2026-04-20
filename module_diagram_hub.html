@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Osmosis - Diagram Laboratory</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="core_styles.css">
+  <style>
+    .hub-card { padding: 3rem; max-width: 900px; margin: auto; text-align: center; }
+    .hub-header { font-size: 3rem; color: var(--text-main); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 1rem; border-bottom: 2px dashed var(--text-secondary); padding-bottom: 1rem; }
+    
+    .diagram-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }
+    
+    .diagram-card {
+      background: var(--bg-light);
+      border: 2px solid var(--accent-primary);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .diagram-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-color: var(--text-main); }
+    
+    .diagram-thumb { width: 100%; height: 200px; object-fit: cover; object-position: center; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .diagram-info { padding: 1.5rem; }
+    .diagram-title { font-size: 1.5rem; color: var(--text-main); font-family: var(--font-serif); font-weight: bold; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="card hub-card parchment-large">
+      <h1 class="hub-header">Diagram Laboratory</h1>
+      <p style="font-size: 1.2rem; color: var(--accent-primary); font-style: italic;">Select a biological schematic to isolate and study.</p>
+      
+      <div class="diagram-grid">
+        <div class="diagram-card" onclick="goToStudy('animal')">
+          <img src="diagrams/animal_cell.jpeg" alt="Animal Cell" class="diagram-thumb">
+          <div class="diagram-info">
+            <div class="diagram-title">Animal Cell Form</div>
+            <p style="color:var(--text-secondary); font-size:1rem;">Master the internal organelles of zoological biology.</p>
+          </div>
+        </div>
+        
+        <div class="diagram-card" onclick="goToStudy('plant')">
+          <img src="diagrams/plant_cell.jpeg" alt="Plant Cell" class="diagram-thumb">
+          <div class="diagram-info">
+            <div class="diagram-title">Plant Cell Form</div>
+            <p style="color:var(--text-secondary); font-size:1rem;">Uncover the rigid structures of botanical biology.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 3rem;">
+        <button id="go-home-btn" class="classic-btn outline">Return to Home</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="core_dictionary.js"></script>
+  <script src="core_shared_state.js"></script>
+  <script src="module_diagram_hub.js"></script>
+</body>
+</html>

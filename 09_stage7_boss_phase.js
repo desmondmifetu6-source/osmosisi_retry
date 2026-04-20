@@ -1,0 +1,285 @@
+// =====================================================================
+// FILE: 09_stage7_boss_phase.js (The Final Boss)
+// =====================================================================
+// Welcome to the final battle! This is like standing before a great king who 
+// wants you to interpret his dreams.
+// For every word you've collected, we show it to you along with its meaning 
+// for just 5 short seconds. Then, poof! It vanishes! 
+// You have to type back the exact word and meaning entirely from memory. 
+// Get it right, and the king rewards you. Get it wrong, and you lose points!
+
+const Stage7Controller = {
+  state: {
+    gameData: null,
+    domCache: {},
+    sequence: [],
+    idx: -1,
+    phase: 'intro',
+    stageStartScore: 0,
+    isFinishing: false
+  },
+
+  CONFIG: {
+    FLASH_MS: 5000
+  },
+
+  init() {
+    if (typeof initModal === 'function') initModal();
+    this.state.gameData = sharedState.load();
+    sharedState.startTimer();
+    sharedState.updateTimerUI();
+
+    if (!this.state.gameData.selectedWords || this.state.gameData.selectedWords.length === 0) {
+      if (typeof window.navigateWithTransition === 'function') navigateWithTransition('00_login.html');
+      else window.location.href = '00_login.html';
+      return;
+    }
+
+    this.state.stageStartScore = this.state.gameData.score || 0;
+    this.state.sequence = [...(this.state.gameData.selectedWords || [])].sort(() => Math.random() - 0.5);
+
+    this.cacheDOM();
+    this.renderInitialUI();
+    this.attachListeners();
+  },
+
+  cacheDOM() {
+    this.state.domCache = {
+      scoreEl: document.getElementById('current-score'),
+      progressEl: document.getElementById('nd-progress'),
+      memoryBoxEl: document.getElementById('nd-memory-box'),
+      inputWrapEl: document.getElementById('nd-input-wrap'),
+      wordInput: document.getElementById('nd-word-input'),
+      meaningInput: document.getElementById('nd-meaning-input'),
+      feedbackEl: document.getElementById('nd-feedback'),
+      revealEl: document.getElementById('nd-reveal'),
+      revealWordEl: document.getElementById('nd-reveal-word'),
+      revealMeaningEl: document.getElementById('nd-reveal-meaning'),
+      mainBtn: document.getElementById('nd-main-btn'),
+      backBtn: document.getElementById('nd-back-btn')
+    };
+  },
+
+  renderInitialUI() {
+    if (this.state.domCache.scoreEl) {
+      this.state.domCache.scoreEl.textContent = this.state.gameData.score || 0;
+    }
+  },
+
+  attachListeners() {
+    const { domCache } = this.state;
+
+    if (domCache.backBtn) {
+      domCache.backBtn.addEventListener('click', () => {
+        if (typeof window.navigateWithTransition === 'function') navigateWithTransition('06_stage4_meaning_exposure.html');
+        else window.location.href = '06_stage4_meaning_exposure.html';
+      });
+    }
+
+    if (domCache.mainBtn) {
+      domCache.mainBtn.addEventListener('click', () => this.handleMainAction());
+    }
+  },
+
+  escapeHTML(str) {
+    return String(str || '').replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag));
+  },
+
+  extractKeywords(text) {
+    // This is a special word-filter. It throws away small, boring words 
+    // like "the" or "and", and keeps only the big, juicy words (keywords) 
+    // so we can see if you *actually* understood the meaning!
+    const stopwords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'of', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'it', 'this', 'that', 'which', 'who', 'whom', 'whose', 'some', 'any', 'such', 'into'];
+    const words = String(text || '').toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+    return [...new Set(words.filter(w => w.length > 2 && !stopwords.includes(w)))];
+  },
+
+  gradeAttempt(userWord, userMeaning, trueWord, trueMeaning) {
+    // Here we grade your answer like a strict but fair teacher.
+    // It checks if you spelled your word perfectly, and counts how many 
+    // "juicy" keywords you got right in the meaning.
+    const wOk = userWord.trim().toLowerCase() === String(trueWord || '').toLowerCase();
+    const trueK = this.extractKeywords(trueMeaning);
+    const userK = this.extractKeywords(userMeaning);
+    let mRatio = 0;
+
+    if (trueK.length > 0) {
+      const hit = trueK.filter(k => userK.includes(k)).length;
+      mRatio = hit / trueK.length;
+    } else if (String(userMeaning || '').trim().length > 15) {
+      mRatio = 0.35;
+    }
+
+    let pts = 0;
+    if (wOk) pts += 10;
+    pts += Math.round(mRatio * 10);
+
+    if (!wOk && mRatio < 0.3) {
+      pts = -15; // Severe deduction for failing the King
+    }
+
+    return { wOk, mRatio, pts };
+  },
+
+  setProgress() {
+    const { domCache, sequence, idx } = this.state;
+    if (!domCache.progressEl) return;
+
+    if (idx < 0) {
+      domCache.progressEl.textContent = `0 / ${sequence.length}`;
+    } else {
+      domCache.progressEl.textContent = `${idx + 1} / ${sequence.length}`;
+    }
+  },
+
+  finishStage() {
+    if (this.state.isFinishing) return;
+    this.state.isFinishing = true;
+
+    sharedState.save(this.state.gameData);
+    const stageScore = Math.max(0, (this.state.gameData.score || 0) - this.state.stageStartScore);
+
+    if (typeof AudioManager !== 'undefined') AudioManager.play('success');
+
+    sharedState.showStageScoreThen('nebuchadnezzar', 'Final Round', stageScore, () => {
+      if (typeof window.navigateWithTransition === 'function') navigateWithTransition('10_results.html');
+      else window.location.href = '10_results.html';
+    });
+  },
+
+  showFlashCard() {
+    // This is the magical "Flash!" moment. We bring up the flashcard, 
+    // show you the word and its meaning, and start our 5-second countdown timer!
+    // Stare at it and memorize it before it disappears!
+    const { domCache, sequence, idx, gameData } = this.state;
+
+    const word = sequence[idx];
+    const meaning = (gameData.meanings && gameData.meanings[word]) ? gameData.meanings[word] : '';
+
+    this.setProgress();
+
+    if (domCache.feedbackEl) {
+      domCache.feedbackEl.textContent = '';
+      domCache.feedbackEl.className = 'nd-feedback';
+    }
+
+    if (domCache.revealEl) domCache.revealEl.style.display = 'none';
+    if (domCache.inputWrapEl) domCache.inputWrapEl.style.display = 'none';
+    if (domCache.wordInput) domCache.wordInput.value = '';
+    if (domCache.meaningInput) domCache.meaningInput.value = '';
+
+    if (domCache.memoryBoxEl) {
+      domCache.memoryBoxEl.innerHTML = `<div class="nd-word">${this.escapeHTML(word)}</div><div class="nd-meaning">${this.escapeHTML(meaning)}</div>`;
+    }
+
+    if (domCache.mainBtn) {
+      domCache.mainBtn.disabled = true;
+      domCache.mainBtn.textContent = 'Memorize...';
+    }
+    this.state.phase = 'flash';
+
+    setTimeout(() => {
+      if (domCache.memoryBoxEl) {
+        domCache.memoryBoxEl.innerHTML = `<div class="nd-hidden-note">Now type the word and meaning you saw.</div>`;
+      }
+      if (domCache.inputWrapEl) domCache.inputWrapEl.style.display = 'block';
+      if (domCache.wordInput) domCache.wordInput.focus();
+
+      if (domCache.mainBtn) {
+        domCache.mainBtn.disabled = false;
+        domCache.mainBtn.textContent = (idx === sequence.length - 1) ? 'Check & Finish' : 'Check';
+      }
+      this.state.phase = 'answer';
+    }, this.CONFIG.FLASH_MS);
+  },
+
+  advanceToNextCard() {
+    this.state.idx += 1;
+    if (this.state.idx >= this.state.sequence.length) {
+      this.finishStage();
+      return;
+    }
+    this.showFlashCard();
+  },
+
+  handleMainAction() {
+    const { sequence, phase } = this.state;
+
+    if (sequence.length === 0) {
+      if (typeof window.navigateWithTransition === 'function') navigateWithTransition('10_results.html');
+      else window.location.href = '10_results.html';
+      return;
+    }
+
+    if (phase === 'intro' || phase === 'next') {
+      this.advanceToNextCard();
+      return;
+    }
+
+    if (phase !== 'answer') return;
+
+    this.submitAnswer();
+  },
+
+  submitAnswer() {
+    // This happens when you confidently click "Check".
+    // We look at what you typed, ask the teacher (gradeAttempt) how you did, 
+    // and figure out what color ribbon or harsh words you get from the King!
+    const { domCache, sequence, idx, gameData } = this.state;
+
+    const word = sequence[idx];
+    const meaning = (gameData.meanings && gameData.meanings[word]) ? gameData.meanings[word] : '';
+
+    const userWord = domCache.wordInput ? domCache.wordInput.value : '';
+    const userMeaning = domCache.meaningInput ? domCache.meaningInput.value : '';
+
+    const g = this.gradeAttempt(userWord, userMeaning, word, meaning);
+
+    gameData.score = (gameData.score || 0) + g.pts;
+    if (domCache.scoreEl) domCache.scoreEl.textContent = gameData.score;
+    sharedState.save(gameData);
+
+    const pct = Math.round(g.mRatio * 100);
+
+    if (domCache.feedbackEl) {
+      if (g.wOk && g.mRatio >= 0.8) {
+        domCache.feedbackEl.className = 'nd-feedback ok';
+        domCache.feedbackEl.textContent = `You have succesfully  revealed his dream and its meaning The King is pleased ! ! +${g.pts} pts`;
+        if (typeof AudioManager !== 'undefined') AudioManager.play('success');
+      } else if (g.wOk || g.mRatio >= 0.50) {
+        domCache.feedbackEl.className = 'nd-feedback partial';
+        domCache.feedbackEl.textContent = `The King is partially pleased for partial interpretation! you gained a token reward of   +${g.pts} pts (${pct}% match)`;
+        if (typeof AudioManager !== 'undefined') AudioManager.play('chip');
+      } else {
+        domCache.feedbackEl.className = 'nd-feedback bad';
+        if (g.pts < 0) {
+          domCache.feedbackEl.textContent = `You have angered the King! ${g.pts} pts`;
+        } else {
+          domCache.feedbackEl.textContent = `Missed this one. +${g.pts} pts`;
+        }
+        if (typeof AudioManager !== 'undefined') AudioManager.play('error');
+      }
+    }
+
+    if (domCache.revealWordEl) domCache.revealWordEl.textContent = word;
+    if (domCache.revealMeaningEl) domCache.revealMeaningEl.textContent = meaning;
+    if (domCache.revealEl) domCache.revealEl.style.display = 'block';
+
+    this.state.phase = 'next';
+    if (domCache.mainBtn) {
+      domCache.mainBtn.textContent = (idx === sequence.length - 1) ? 'Finish to Results' : 'Next';
+    }
+  }
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => Stage7Controller.init());
+} else {
+  Stage7Controller.init();
+}
